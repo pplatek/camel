@@ -20,14 +20,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.TestCase;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import static org.apache.camel.catalog.CatalogHelper.loadText;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-public class CamelCatalogTest extends TestCase {
+public class CamelCatalogTest {
 
     private CamelCatalog catalog = new DefaultCamelCatalog();
+
+    @Test
+    public void testGetVersion() throws Exception {
+        String version = catalog.getCatalogVersion();
+        assertNotNull(version);
+    }
 
     @Test
     public void testFindLanguageNames() throws Exception {
@@ -141,6 +151,47 @@ public class CamelCatalogTest extends TestCase {
     }
 
     @Test
+    public void testAsEndpointUriNetty4http() throws Exception {
+        Map<String, String> map = new HashMap<String, String>();
+        map.put("protocol", "http");
+        map.put("host", "localhost");
+        map.put("port", "8080");
+        map.put("path", "foo/bar");
+        map.put("disconnect", "true");
+
+        String uri = catalog.asEndpointUri("netty4-http", map);
+        assertEquals("netty4-http:http:localhost:8080/foo/bar?disconnect=true", uri);
+
+        // lets set a query parameter in the path
+        map.put("path", "foo/bar?verbose=true");
+        map.put("disconnect", "true");
+
+        uri = catalog.asEndpointUri("netty4-http", map);
+        assertEquals("netty4-http:http:localhost:8080/foo/bar?verbose=true&disconnect=true", uri);
+    }
+
+    @Test
+    public void testAsEndpointUriTimer() throws Exception {
+        Map<String, String> map = new HashMap<String, String>();
+        map.put("timerName", "foo");
+        map.put("period", "5000");
+
+        String uri = catalog.asEndpointUri("timer", map);
+        assertEquals("timer:foo?period=5000", uri);
+    }
+
+
+    @Test
+    public void testAsEndpointUriBeanLookup() throws Exception {
+        Map<String, String> map = new HashMap<String, String>();
+        map.put("resourceUri", "foo.xslt");
+        map.put("converter", "#myConverter");
+
+        String uri = catalog.asEndpointUri("xslt", map);
+        assertEquals("xslt:foo.xslt?converter=#myConverter", uri);
+    }
+
+    @Test
     public void testAsEndpointUriMapJmsRequiredOnly() throws Exception {
         Map<String, String> map = new HashMap<String, String>();
         map.put("destinationName", "foo");
@@ -177,12 +228,33 @@ public class CamelCatalogTest extends TestCase {
     }
 
     @Test
+    public void testEndpointPropertiesNetty4http() throws Exception {
+        Map<String, String> map = catalog.endpointProperties("netty4-http:http:localhost:8080/foo/bar?disconnect=true&keepAlive=false");
+        assertNotNull(map);
+        assertEquals(6, map.size());
+
+        assertEquals("http", map.get("protocol"));
+        assertEquals("localhost", map.get("host"));
+        assertEquals("8080", map.get("port"));
+        // TODO: fix me later
+        //assertEquals("foo/bar", map.get("path"));
+        assertEquals("true", map.get("disconnect"));
+        assertEquals("false", map.get("keepAlive"));
+    }
+
+    @Test
     public void testEndpointPropertiesJms() throws Exception {
         Map<String, String> map = catalog.endpointProperties("jms:queue:foo");
         assertNotNull(map);
         assertEquals(2, map.size());
 
         assertEquals("queue", map.get("destinationType"));
+        assertEquals("foo", map.get("destinationName"));
+
+        map = catalog.endpointProperties("jms:foo");
+        assertNotNull(map);
+        assertEquals(1, map.size());
+
         assertEquals("foo", map.get("destinationName"));
     }
 
@@ -224,6 +296,61 @@ public class CamelCatalogTest extends TestCase {
     public void testEndpointComponentName() throws Exception {
         String name = catalog.endpointComponentName("jms:queue:foo");
         assertEquals("jms", name);
+    }
+
+    @Test
+    public void testListComponentsAsJson() throws Exception {
+        String json = catalog.listComponentsAsJson();
+        assertNotNull(json);
+
+        // validate we can parse the json
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode tree = mapper.readTree(json);
+        assertNotNull(tree);
+    }
+
+    @Test
+    public void testListDataFormatsAsJson() throws Exception {
+        String json = catalog.listDataFormatsAsJson();
+        assertNotNull(json);
+
+        // validate we can parse the json
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode tree = mapper.readTree(json);
+        assertNotNull(tree);
+    }
+
+    @Test
+    public void testListLanguagesAsJson() throws Exception {
+        String json = catalog.listLanguagesAsJson();
+        assertNotNull(json);
+
+        // validate we can parse the json
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode tree = mapper.readTree(json);
+        assertNotNull(tree);
+    }
+
+    @Test
+    public void testListModelsAsJson() throws Exception {
+        String json = catalog.listModelsAsJson();
+        assertNotNull(json);
+
+        // validate we can parse the json
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode tree = mapper.readTree(json);
+        assertNotNull(tree);
+    }
+
+    @Test
+    public void testSummaryAsJson() throws Exception {
+        String json = catalog.summaryAsJson();
+        assertNotNull(json);
+
+        // validate we can parse the json
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode tree = mapper.readTree(json);
+        assertNotNull(tree);
     }
 
 }

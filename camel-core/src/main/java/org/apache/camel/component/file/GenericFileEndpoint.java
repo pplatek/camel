@@ -117,7 +117,7 @@ public abstract class GenericFileEndpoint<T> extends ScheduledPollEndpoint imple
     protected boolean recursive;
     @UriParam(label = "consumer")
     protected boolean delete;
-    @UriParam(label = "consumer")
+    @UriParam(label = "consumer,filter")
     protected int maxMessagesPerPoll;
     @UriParam(label = "consumer,filter", defaultValue = "true")
     protected boolean eagerMaxMessagesPerPoll = true;
@@ -137,7 +137,7 @@ public abstract class GenericFileEndpoint<T> extends ScheduledPollEndpoint imple
     protected Expression preMove;
     @UriParam(label = "producer")
     protected Expression moveExisting;
-    @UriParam(label = "consumer,filter")
+    @UriParam(label = "consumer,filter", defaultValue = "false")
     protected Boolean idempotent;
     @UriParam(label = "consumer,filter")
     protected Expression idempotentKey;
